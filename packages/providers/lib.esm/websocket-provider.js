@@ -226,6 +226,13 @@ export class WebSocketProvider extends JsonRpcProvider {
                 });
                 break;
             }
+            case "req": {
+                let req = Object.assign({}, event.request);
+                this._subscribe(event.tag, [req.method, req.params], (result) => {
+                    this.emit(event.request, result);
+                });
+                break;
+            }
             // Nothing is needed
             case "debug":
             case "poll":

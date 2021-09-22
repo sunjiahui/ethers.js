@@ -94,6 +94,10 @@ export interface Filter extends EventFilter {
 export interface FilterByBlockHash extends EventFilter {
     blockHash?: string;
 }
+export interface GeneralReqEvent {
+    method: string;
+    params?: any;
+}
 export declare abstract class ForkEvent extends Description {
     readonly expiry: number;
     readonly _isForkEvent?: boolean;
@@ -114,7 +118,7 @@ export declare class TransactionOrderForkEvent extends ForkEvent {
     readonly afterHash: string;
     constructor(beforeHash: string, afterHash: string, expiry?: number);
 }
-export declare type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent;
+export declare type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent | GeneralReqEvent;
 export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider implements OnceBlockable {
     abstract getNetwork(): Promise<Network>;

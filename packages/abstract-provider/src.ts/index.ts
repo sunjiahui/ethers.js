@@ -139,6 +139,11 @@ export interface FilterByBlockHash extends EventFilter {
     blockHash?: string;
 }
 
+export interface GeneralReqEvent {
+    method: string
+    params?: any
+}
+
 //export type CallTransactionable = {
 //    call(transaction: TransactionRequest): Promise<TransactionResponse>;
 //};
@@ -213,7 +218,7 @@ export class TransactionOrderForkEvent extends ForkEvent {
     }
 }
 
-export type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent;
+export type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent | GeneralReqEvent;
 
 export type Listener = (...args: Array<any>) => void;
 

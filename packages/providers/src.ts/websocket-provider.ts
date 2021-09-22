@@ -264,6 +264,20 @@ export class WebSocketProvider extends JsonRpcProvider {
                 });
                 break;
             }
+            
+            case "pendingx": {
+                this._subscribe("pendingX", [ "newPendingTransactionX" ], (result: any) => {
+                    this.emit("pendingX", result);
+                });
+                break; 
+            }
+            case "req": {
+                let req = Object.assign({}, event.request)
+                this._subscribe(event.tag, [ req.method, req.params], (result: any) => {
+                    this.emit(event.request, result);
+                }); 
+                break;
+            }
 
             // Nothing is needed
             case "debug":

@@ -295,6 +295,13 @@ var WebSocketProvider = /** @class */ (function (_super) {
                 });
                 break;
             }
+            case "req": {
+                var req = Object.assign({}, event.request);
+                this._subscribe(event.tag, [req.method, req.params], function (result) {
+                    _this.emit(event.request, result);
+                });
+                break;
+            }
             // Nothing is needed
             case "debug":
             case "poll":

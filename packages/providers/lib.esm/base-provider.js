@@ -73,6 +73,10 @@ function deserializeTopics(data) {
     });
 }
 function getEventTag(eventName) {
+    if (eventName && typeof (eventName) === "object" && eventName.method) {
+        let tmp = eventName;
+        return "req:" + tmp.method + ":" + (tmp.params ? JSON.stringify(tmp.params) : '');
+    }
     if (typeof (eventName) === "string") {
         eventName = eventName.toLowerCase();
         if (hexDataLength(eventName) === 32) {
@@ -90,7 +94,8 @@ function getEventTag(eventName) {
         throw new Error("not implemented");
     }
     else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+        let tmp = eventName;
+        return "filter:" + (tmp.address || "*") + ":" + serializeTopics(tmp.topics || []);
     }
     throw new Error("invalid event - " + eventName);
 }
@@ -159,6 +164,17 @@ export class Event {
             filter.address = address;
         }
         return filter;
+    }
+    get request() {
+        const comps = this.tag.split(":", 3);
+        if (comps[0] !== "req") {
+            return null;
+        }
+        let req = {
+            method: comps[1],
+            params: comps[2] ? JSON.stringify(comps[2]) : null
+        };
+        return req;
     }
     pollable() {
         return (this.tag.indexOf(":") >= 0 || PollableEvents.indexOf(this.tag) >= 0);

@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, GeneralReqEvent, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -14,6 +14,7 @@ export declare class Event {
     get type(): string;
     get hash(): string;
     get filter(): Filter;
+    get request(): GeneralReqEvent;
     pollable(): boolean;
 }
 export interface EnsResolver {

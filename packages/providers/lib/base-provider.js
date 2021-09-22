@@ -120,6 +120,10 @@ function deserializeTopics(data) {
     });
 }
 function getEventTag(eventName) {
+    if (eventName && typeof (eventName) === "object" && eventName.method) {
+        var tmp = eventName;
+        return "req:" + tmp.method + ":" + (tmp.params ? JSON.stringify(tmp.params) : '');
+    }
     if (typeof (eventName) === "string") {
         eventName = eventName.toLowerCase();
         if (bytes_1.hexDataLength(eventName) === 32) {
@@ -137,7 +141,8 @@ function getEventTag(eventName) {
         throw new Error("not implemented");
     }
     else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+        var tmp = eventName;
+        return "filter:" + (tmp.address || "*") + ":" + serializeTopics(tmp.topics || []);
     }
     throw new Error("invalid event - " + eventName);
 }
@@ -219,6 +224,21 @@ var Event = /** @class */ (function () {
                 filter.address = address;
             }
             return filter;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Event.prototype, "request", {
+        get: function () {
+            var comps = this.tag.split(":", 3);
+            if (comps[0] !== "req") {
+                return null;
+            }
+            var req = {
+                method: comps[1],
+                params: comps[2] ? JSON.stringify(comps[2]) : null
+            };
+            return req;
         },
         enumerable: false,
         configurable: true

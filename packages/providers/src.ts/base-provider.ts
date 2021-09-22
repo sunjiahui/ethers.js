@@ -1,7 +1,7 @@
 "use strict";
 
 import {
-    Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, ForkEvent,
+    Block, BlockTag, BlockWithTransactions, EventFilter, EventType, Filter, FilterByBlockHash, ForkEvent, GeneralReqEvent,
     Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
@@ -76,6 +76,11 @@ function deserializeTopics(data: string): Array<string | Array<string>> {
 }
 
 function getEventTag(eventName: EventType): string {
+    if (eventName && typeof(eventName) === "object" && (eventName as GeneralReqEvent).method) {
+        let tmp = eventName as GeneralReqEvent
+        return "req:" + tmp.method + ":" + (tmp.params ? JSON.stringify(tmp.params) : '')
+    }
+    
     if (typeof(eventName) === "string") {
         eventName = eventName.toLowerCase();
 
@@ -95,7 +100,8 @@ function getEventTag(eventName: EventType): string {
         throw new Error("not implemented");
 
     } else if (eventName && typeof(eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+        let tmp = eventName as EventFilter
+        return "filter:" + (tmp.address || "*") + ":" + serializeTopics(tmp.topics || []);
     }
 
     throw new Error("invalid event - " + eventName);
@@ -176,6 +182,16 @@ export class Event {
         if (address && address !== "*") { filter.address = address; }
 
         return filter;
+    }
+    
+    get request(): GeneralReqEvent {
+        const comps = this.tag.split(":", 3);
+        if (comps[0] !== "req") { return null; } 
+        let req = {
+            method: comps[1],
+            params: comps[2] ? JSON.stringify(comps[2]) : null
+        }
+        return req
     }
 
     pollable(): boolean {

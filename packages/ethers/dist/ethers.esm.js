@@ -9280,16 +9280,6 @@ try {
 
 var inherits_1 = inherits;
 
-function isSurrogatePair(msg, i) {
-  if ((msg.charCodeAt(i) & 0xFC00) !== 0xD800) {
-    return false;
-  }
-  if (i < 0 || i + 1 >= msg.length) {
-    return false;
-  }
-  return (msg.charCodeAt(i + 1) & 0xFC00) === 0xDC00;
-}
-
 function toArray(msg, enc) {
   if (Array.isArray(msg))
     return msg.slice();
@@ -9298,29 +9288,14 @@ function toArray(msg, enc) {
   var res = [];
   if (typeof msg === 'string') {
     if (!enc) {
-      // Inspired by stringToUtf8ByteArray() in closure-library by Google
-      // https://github.com/google/closure-library/blob/8598d87242af59aac233270742c8984e2b2bdbe0/closure/goog/crypt/crypt.js#L117-L143
-      // Apache License 2.0
-      // https://github.com/google/closure-library/blob/master/LICENSE
-      var p = 0;
       for (var i = 0; i < msg.length; i++) {
         var c = msg.charCodeAt(i);
-        if (c < 128) {
-          res[p++] = c;
-        } else if (c < 2048) {
-          res[p++] = (c >> 6) | 192;
-          res[p++] = (c & 63) | 128;
-        } else if (isSurrogatePair(msg, i)) {
-          c = 0x10000 + ((c & 0x03FF) << 10) + (msg.charCodeAt(++i) & 0x03FF);
-          res[p++] = (c >> 18) | 240;
-          res[p++] = ((c >> 12) & 63) | 128;
-          res[p++] = ((c >> 6) & 63) | 128;
-          res[p++] = (c & 63) | 128;
-        } else {
-          res[p++] = (c >> 12) | 224;
-          res[p++] = ((c >> 6) & 63) | 128;
-          res[p++] = (c & 63) | 128;
-        }
+        var hi = c >> 8;
+        var lo = c & 0xff;
+        if (hi)
+          res.push(hi, lo);
+        else
+          res.push(lo);
       }
     } else if (enc === 'hex') {
       msg = msg.replace(/[^a-z0-9]+/ig, '');
@@ -18824,6 +18799,10 @@ function deserializeTopics(data) {
     });
 }
 function getEventTag$1(eventName) {
+    if (eventName && typeof (eventName) === "object" && eventName.method) {
+        let tmp = eventName;
+        return "req:" + tmp.method + ":" + (tmp.params ? JSON.stringify(tmp.params) : '');
+    }
     if (typeof (eventName) === "string") {
         eventName = eventName.toLowerCase();
         if (hexDataLength(eventName) === 32) {
@@ -18841,7 +18820,8 @@ function getEventTag$1(eventName) {
         throw new Error("not implemented");
     }
     else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+        let tmp = eventName;
+        return "filter:" + (tmp.address || "*") + ":" + serializeTopics(tmp.topics || []);
     }
     throw new Error("invalid event - " + eventName);
 }
@@ -18910,6 +18890,17 @@ class Event {
             filter.address = address;
         }
         return filter;
+    }
+    get request() {
+        const comps = this.tag.split(":", 3);
+        if (comps[0] !== "req") {
+            return null;
+        }
+        let req = {
+            method: comps[1],
+            params: comps[2] ? JSON.stringify(comps[2]) : null
+        };
+        return req;
     }
     pollable() {
         return (this.tag.indexOf(":") >= 0 || PollableEvents.indexOf(this.tag) >= 0);
@@ -21127,6 +21118,13 @@ class WebSocketProvider extends JsonRpcProvider {
                 // running is (basically) a nop.
                 this._subscribe("tx", ["newHeads"], (result) => {
                     this._events.filter((e) => (e.type === "tx")).forEach(emitReceipt);
+                });
+                break;
+            }
+            case "req": {
+                let req = Object.assign({}, event.request);
+                this._subscribe(event.tag, [req.method, req.params], (result) => {
+                    this.emit(event.request, result);
                 });
                 break;
             }
